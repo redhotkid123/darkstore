@@ -1,0 +1,23 @@
+{
+  "development": {
+    "username": "jihyunmin1",
+    "password": "djWn",
+    "database": "darkstore",
+    "host": "localhost",
+    "dialect": "postgres"
+  },
+  "test": {
+    "username": "jihyunmin1",
+    "password": "djWn",
+    "database": "darkstore",
+    "host": "localhost",
+    "dialect": "postgres"
+  },
+  "production": {
+    "username": "jihyunmin1",
+    "password": "djWn",
+    "database": "darkstore",
+    "host": "localhost",
+    "dialect": "postgres"
+  }
+}
