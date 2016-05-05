@@ -1,3 +1,5 @@
+/* SEQUELIZE IS BUILT ON GULP */
+
 /**
  * Module Dependencies
  */

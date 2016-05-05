@@ -33,32 +33,45 @@ var ResultBox = React.createClass({
 	}
 });
 
-// all comments are wrapped in the CommentBox with nested comments (via CommentWrapper)
-var CommentBox = React.createClass({
+var SearchForm = React.createClass({
+	getInitialState: function() {
+		return {venue: '', zipcode: ''};
+	},
 
-	render: function () {
+	handleVenueChange: function (e) {
+		this.setState({venue: e.target.value});
+	},
 
-		 if(!(typeof this.props.newResults === 'undefined') && (this.props.newResults.comments.length > this.props.commentResults.length)) {
-			var commentNodes = this.props.newResults.comments.map(function (comment) {
-				return (<CommentWrapper key={comment.id} allinfo={comment} />);
-			});
-		} else if(this.props.commentResults){
-			var commentNodes = this.props.commentResults.map(function (comment) {
-				return (<CommentWrapper key={comment.id} allinfo={comment} />);
-			});
+	handleZipChange: function (e) {
+		this.setState({zipcode: e.target.value});
+	},
+
+	handleSubmit: function (e) {
+		e.preventDefault();
+		var venue = this.state.venue.trim();
+		var zipcode = this.state.zipcode.trim();
+
+		if(!venue || !zipcode) {
+			return;
 		}
-		return (<div>{commentNodes}</div>);
-		}
-});
 
-// each comment formatted/ rendered
-var CommentWrapper = React.createClass({
-	render: function () {
+		var query = {venue: venue, zipcode: zipcode};
+		// pass along query to ._handleSubmit function in ResultBox
+		this.props.onSearchSubmit(query);
+		// clear out search form
+		this.setState({venue: '', zipcode: ''});
+	},
+
+	render: function() {
 		return (
-			<p> {this.props.allinfo.name}: {this.props.allinfo.message} </p>
+			<form className="searchForm" onSubmit={this.handleSubmit}>
+			<input type="text" placeholder="Venue" value={this.state.venue} onChange={this.handleVenueChange} />
+			<input type="text" placeholder="Zip Code" value={this.state.zipcode} onChange={this.handleZipChange} />
+			<input type="submit" value="Search" />
+			</form>
 			);
 	}
-})
+});
 
 // the giant unordered list item with nested elements (via ResultWrapper)
 var ResultList = React.createClass({
@@ -70,6 +83,49 @@ var ResultList = React.createClass({
 			});
 		}
 		return (<ul className="resultList"> {resultNodes} </ul>);
+	}
+});
+
+// list of places once yelp returns a list of venues
+var ResultWrapper = React.createClass({
+	getInitialState: function () {
+		return {
+			commentResults: [],
+			restaurant: [],
+			dbVenue: []
+		};
+	},
+
+	onNameClick: function(bizid, e) {
+		var bizid = {bizid: bizid};
+		// make get request to receive comments & viewcount associated with venue clicked
+		$.ajax({
+			url: "/results",
+			dataType: 'json',
+			type:'GET',
+			data: bizid,
+			cache: false,
+			success: function (data) {
+				this.setState({restaurant: this.props.data});
+				this.setState({commentResults: data.comments});
+				this.setState({dbVenue: data.venue});
+			}.bind(this),
+			error: function (xhr, status, err) {
+				console.log(status, err.toString());
+			}.bind(this)
+		});
+	},
+
+	render: function() {
+	// when you click on name of venue, bind information
+	let boundResult = this.onNameClick.bind(this, this.props.data.id);	
+	return (
+		<div>
+			<li onClick={boundResult}>{this.props.data.name} </li>
+			<div><RestaurantBox restaurant={this.state.restaurant} dbVenue={this.state.dbVenue} commentResults={this.state.commentResults} /></div>
+		</div>
+		
+		);
 	}
 });
 
@@ -118,48 +174,34 @@ var RestaurantBox = React.createClass({
 	}
 })
 
-// list of places once yelp returns a list of venues
-var ResultWrapper = React.createClass({
-	getInitialState: function () {
-		return {
-			commentResults: [],
-			restaurant: [],
-			dbVenue: []
-		};
-	},
+// all comments are wrapped in the CommentBox with nested comments (via CommentWrapper)
+var CommentBox = React.createClass({
 
-	render: function() {
-		// when you click on name of venue, bind information
-		let boundResult = this.onNameClick.bind(this, this.props.data.id);	
+	render: function () {
+		// when a new comment is added
+		 if(!(typeof this.props.newResults === 'undefined') && (this.props.newResults.comments.length > this.props.commentResults.length)) {
+			var commentNodes = this.props.newResults.comments.map(function (comment) {
+				return (<CommentWrapper key={comment.id} allinfo={comment} />);
+			});
+		// when user clicks on restaurant for the first time, display comments
+		} else if(this.props.commentResults){
+			var commentNodes = this.props.commentResults.map(function (comment) {
+				return (<CommentWrapper key={comment.id} allinfo={comment} />);
+			});
+		}
+		return (<div>{commentNodes}</div>);
+		}
+});
+
+// each comment formatted/ rendered
+var CommentWrapper = React.createClass({
+	render: function () {
 		return (
-			<div>
-				<li onClick={boundResult}>{this.props.data.name} </li>
-				<div><RestaurantBox restaurant={this.state.restaurant} dbVenue={this.state.dbVenue} commentResults={this.state.commentResults} /></div>
-			</div>
-			
-		);
-	},
-
-	onNameClick: function(bizid, e) {
-		var bizid = {bizid: bizid};
-		// make get request to receive comments & viewcount associated with venue clicked
-		$.ajax({
-			url: "/results",
-			dataType: 'json',
-			type:'GET',
-			data: bizid,
-			cache: false,
-			success: function (data) {
-				this.setState({restaurant: this.props.data});
-				this.setState({commentResults: data.comments});
-				this.setState({dbVenue: data.venue});
-			}.bind(this),
-			error: function (xhr, status, err) {
-				console.log(status, err.toString());
-			}.bind(this)
-		});
+			<p> {this.props.allinfo.name}: {this.props.allinfo.message} </p>
+			);
 	}
 });
+
 
 var CommentForm = React.createClass({
 	getInitialState: function() {
@@ -201,47 +243,6 @@ var CommentForm = React.createClass({
 			</form>
 		);
 	}
-})
-
-var SearchForm = React.createClass({
-	getInitialState: function() {
-		return {venue: '', zipcode: ''};
-	},
-
-	handleVenueChange: function (e) {
-		this.setState({venue: e.target.value});
-	},
-
-	handleZipChange: function (e) {
-		this.setState({zipcode: e.target.value});
-	},
-
-	handleSubmit: function (e) {
-		e.preventDefault();
-		var venue = this.state.venue.trim();
-		var zipcode = this.state.zipcode.trim();
-
-		if(!venue || !zipcode) {
-			return;
-		}
-
-		var query = {venue: venue, zipcode: zipcode};
-		// pass along query to ._handleSubmit function in ResultBox
-		this.props.onSearchSubmit(query);
-		// clear out search form
-		this.setState({venue: '', zipcode: ''});
-	},
-
-	render: function() {
-		return (
-			<form className="searchForm" onSubmit={this.handleSubmit}>
-			<input type="text" placeholder="Venue" value={this.state.venue} onChange={this.handleVenueChange} />
-			<input type="text" placeholder="Zip Code" value={this.state.zipcode} onChange={this.handleZipChange} />
-			<input type="submit" value="Search" />
-			</form>
-			);
-	}
 });
-
 
 ReactDOM.render(<ResultBox />, document.getElementById('everything'))
