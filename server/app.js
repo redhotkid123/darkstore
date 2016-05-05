@@ -1,9 +1,7 @@
 // *** main dependencies *** //
 var express = require('express');
 var path = require('path');
-//var favicon = require('serve-favicon');
 var logger = require('morgan');
-var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var swig = require('swig');
 
@@ -15,14 +13,14 @@ var swig = require('swig');
 // *** express instance *** //
 var app = express();
 
-var pg = require('pg');
-var db = require('./models');
+// var pg = require('pg');
+// var db = require('./models');
 
-db.sequelize.sync().then(function() {
-  http.createServer(app).listen(app.get('port'), function(){
-    console.log('Express server listening on port ' + app.get('port'));
-  });
-});
+// db.sequelize.sync().then(function() {
+//   http.createServer(app).listen(app.get('port'), function(){
+//     console.log('Express server listening on port ' + app.get('port'));
+//   });
+// });
 
 // *** view engine *** //
 var swig = new swig.Swig();
@@ -38,7 +36,6 @@ app.set('views', path.join(__dirname, './../client/views'));
 app.use(logger('dev'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
-app.use(cookieParser());
 app.use(express.static(path.join(__dirname, '../client')));
 
 
